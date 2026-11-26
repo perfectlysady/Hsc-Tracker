@@ -62,7 +62,7 @@ input[type=checkbox]:checked{background:var(--fill)}
 <div class="box grid">
   <div><label>Exam date</label><input type="date" id="exam"></div>
   <div><label>Revision days</label><input type="number" id="buf" min="0"></div>
-  <div><label>Hours per step</label><input type="number" id="hpb" min="0.5" step="0.5"></div>
+  <div><label>Hours per step</label><div class="big">4</div></div>
 </div>
 <div id="list"></div>
 <div class="box"><button id="out">Log out</button></div>
@@ -86,6 +86,7 @@ const bn=x=>esc(x);
 const ST=["Learn","Practice","Revise"];
 let S={exam:"2027-06-06",buf:30,hpb:4,done:{},extra:{},open:{}};
 try{Object.assign(S,JSON.parse(localStorage.getItem("hsc27")||"{}"))}catch(e){}
+S.hpb=4;
 const save=(keep)=>{if(!keep)S.t=Date.now();try{localStorage.setItem("hsc27",JSON.stringify(S))}catch(e){}if(!keep)pushRemote()};
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 const chs=s=>[...D[s],...(S.extra[s]||[])];
@@ -107,10 +108,9 @@ function render(){
   $("hpd").textContent=days>0?(left*S.hpb/days).toFixed(1):"-";
   $("line").textContent=`${left} steps left (${(left*S.hpb).toFixed(0)}h)`+(days>0?`, about ${(left/days).toFixed(1)} steps a day`:", revision time has started");
 }
-$("exam").value=S.exam;$("buf").value=S.buf;$("hpb").value=S.hpb;
+$("exam").value=S.exam;$("buf").value=S.buf;
 $("exam").onchange=e=>{S.exam=e.target.value;save();render()};
 $("buf").oninput=e=>{S.buf=+e.target.value||0;save();render()};
-$("hpb").oninput=e=>{S.hpb=+e.target.value||1;save();render()};
 $("list").addEventListener("change",e=>{const k=e.target.dataset.k;if(k){S.done[k]=e.target.checked;save();render()}});
 $("list").addEventListener("toggle",e=>{S.open[e.target.dataset.s]=e.target.open;save()},true);
 $("list").addEventListener("click",e=>{const s=e.target.dataset.b;if(!s)return;const v=e.target.parentNode.querySelector("input").value.trim();if(!v)return;(S.extra[s]=S.extra[s]||[]).push(v);S.open[s]=true;save();render()});
@@ -129,7 +129,7 @@ const say=t=>{g("lmsg").textContent=t};
   if(String(cfg.apiKey).includes("PASTE")||String(cfg.projectId).includes("PASTE")){say("Fill in firebase-config.js with your Firebase keys");return}
   const {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,onAuthStateChanged,signOut}=A;
   const {getFirestore,doc,setDoc,onSnapshot}=F;
-  const KEYS=["exam","buf","hpb","done","extra"];
+  const KEYS=["exam","buf","done","extra"];
   const email=n=>n.replace(/\D/g,"")+"@hsc.local";
   const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
   async function go(create){
@@ -156,7 +156,7 @@ const say=t=>{g("lmsg").textContent=t};
       const r=snap.data();
       if((r.t||0)>(S.t||0)){
         try{const j=JSON.parse(r.json);KEYS.forEach(k=>{if(j[k]!==undefined)S[k]=j[k]});S.t=r.t;save(true);
-          g("exam").value=S.exam;g("buf").value=S.buf;g("hpb").value=S.hpb;render()}catch(e){}
+          g("exam").value=S.exam;g("buf").value=S.buf;render()}catch(e){}
       }else if((r.t||0)<(S.t||0)){cloudPush()}
     },e=>{g("sync").textContent="Sync error: "+(e.code||e.message)});
   });
