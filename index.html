@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HSC Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Pixelify+Sans:wght@400;600&family=Hind+Siliguri:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--fg:#000;--mut:#666;--line:#000;--bar:#e5e5e5;--fill:#000;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--fg:#fff;--mut:#aaa;--line:#fff;--bar:#333;--fill:#fff}}
+:root[data-theme="dark"]{--bg:#000;--fg:#fff;--mut:#aaa;--line:#fff;--bar:#333;--fill:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 "Pixelify Sans","Hind Siliguri",ui-monospace,monospace;padding:16px;max-width:720px;margin-inline:auto}
+h1,summary,.big{font-family:"Silkscreen","Hind Siliguri",ui-monospace,monospace}
+h1{font-size:26px;margin:8px 0}
+.box{border:2px solid var(--line);border-radius:10px;padding:12px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.big{font-size:22px}.mut{color:var(--mut);font-size:13px}
+.bar{height:10px;background:var(--bar);border-radius:5px;overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:var(--fill)}
+label{display:block;font-size:13px;color:var(--mut)}
+input[type=date],input[type=number],input[type=text]{width:100%;background:var(--bg);color:var(--fg);border:2px solid var(--line);border-radius:8px;padding:8px;font:inherit}
+summary{cursor:pointer;font-size:16px;display:flex;justify-content:space-between;gap:8px}
+.ch{padding:8px 0;border-top:1px dashed var(--mut)}
+.ch b{font-weight:400}
+.st{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px}
+.st label{display:flex;align-items:center;gap:6px;color:var(--fg);font-size:14px;padding:4px 0}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--fill)}
+button{background:var(--fg);color:var(--bg);border:0;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
+.add{display:flex;gap:8px;margin-top:8px}
+body{padding:24px 20px}
+h1{font-size:18px;font-weight:400;letter-spacing:.08em;margin:12px 0 4px}
+.box{border:0;border-top:1px solid var(--bar);border-radius:0;padding:16px 0;margin:0}
+.big{font-size:20px}
+.bar{height:3px;border-radius:0}
+summary{font-size:14px;list-style:none}
+summary::-webkit-details-marker{display:none}
+.ch{border-top:0;padding:6px 0}
+.st label{color:var(--mut)}
+input[type=date],input[type=number],input[type=text]{border:0;border-bottom:1px solid var(--line);border-radius:0;padding:6px 0}
+button{background:none;color:var(--fg);border:1px solid var(--line);border-radius:0;padding:6px 12px}
+input[type=checkbox]{-webkit-appearance:none;appearance:none;width:18px;height:18px;border:1px solid var(--line);border-radius:0;margin:0}
+input[type=checkbox]:checked{background:var(--fill)}
+#code{border:1px solid var(--line)!important;border-radius:0!important}
+#login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9}
+#login div{width:min(340px,88vw);display:flex;flex-direction:column;gap:12px}
+#lmsg{color:var(--mut);font-size:13px;min-height:18px}
+</style>
+</head>
+<body>
+<div id="login"><div><h1>HSC 27 Tracker</h1><input type="text" id="num" inputmode="tel" placeholder="Phone number"><input type="password" id="pw" placeholder="Password (6+ characters)"><button id="in">Log in</button><button id="up">Create account</button><span id="lmsg"></span></div></div>
+<h1>HSC 27 Tracker</h1>
+<div class="box">
+  <div class="grid">
+    <div><div class="big" id="pct">0%</div><div class="mut">done</div></div>
+    <div><div class="big" id="hpd">0</div><div class="mut">hours/day</div></div>
+    <div><div class="big" id="days">0</div><div class="mut">study days</div></div>
+  </div>
+  <div class="bar"><i id="allbar" style="width:0"></i></div>
+  <div class="mut" id="line"></div><div class="mut" id="sync"></div>
+</div>
+<div class="box grid">
+  <div><label>Exam date</label><input type="date" id="exam"></div>
+  <div><label>Revision days</label><input type="number" id="buf" min="0"></div>
+  <div><label>Hours per step</label><input type="number" id="hpb" min="0.5" step="0.5"></div>
+</div>
+<div id="list"></div>
+<div class="box"><button id="out">Log out</button></div>
+<p class="mut">Each chapter has 3 steps: learn, practice, revise. Tick them as you finish. Chapter names follow the NCTB books roughly, so rename or add your own. Progress is saved in this browser.</p>
+<script>
+const D={
+"Physics 1st":["Physical world and measurement","Vector","Dynamics","Newtonian mechanics","Work, energy and power","Gravitation","Structural properties of matter","Periodic motion","Waves","Ideal gas and kinetic theory"],
+"Physics 2nd":["Thermodynamics","Static electricity","Current electricity","Magnetic effect of current","Electromagnetic induction and AC","Geometric optics","Physical optics","Modern physics","Atomic model and nuclear physics","Semiconductor and electronics","Astronomy"],
+"Chemistry 1st":["Laboratory safety","Qualitative chemistry","Periodic properties and bonding","Chemical changes","Vocational chemistry"],
+"Chemistry 2nd":["Environmental chemistry","Organic chemistry","Quantitative chemistry","Electrochemistry","Economic chemistry"],
+"Higher Math 1st":["Matrices and determinants","Vectors","Straight lines","Circle","Permutation and combination","Trigonometric ratios","Functions and graphs","Differentiation","Integration"],
+"Higher Math 2nd":["Real numbers and inequalities","Linear programming","Complex numbers","Polynomials","Binomial expansion","Conics","Inverse trig functions","Statics","Motion of a particle"],
+"Biology 1st":["Cell and its structure","Cell division","Cell chemistry","Microorganisms","Algae, fungi and bryophyta","Plant tissue","Plant physiology","Plant reproduction","Biotechnology"],
+"Biology 2nd":["Animal diversity","Digestion","Blood and circulation","Respiration","Excretion","Locomotion","Coordination","Reproduction","Genetics and evolution"],
+"ICT":["ICT and global village","Communication systems and networking","Number systems and digital devices","Web design and HTML","Programming language","Database management"],
+"বাংলা ১ম পত্র":["গদ্য: অপরিচিতা (রবীন্দ্রনাথ ঠাকুর)","গদ্য: বিলাসী (শরৎচন্দ্র চট্টোপাধ্যায়)","গদ্য: আমার পথ (কাজী নজরুল ইসলাম)","গদ্য: মানব-কল্যাণ (কাজী মোতাহার হোসেন)","গদ্য: মাসি-পিসি (আশাপূর্ণা দেবী)","গদ্য: বায়ান্নর দিনগুলো (শেখ মুজিবুর রহমান)","গদ্য: রেইনকোট (আখতারুজ্জামান ইলিয়াস)","কবিতা: সোনার তরী (রবীন্দ্রনাথ ঠাকুর)","কবিতা: বিদ্রোহী (কাজী নজরুল ইসলাম)","কবিতা: প্রতিদান (কামিনী রায়)","কবিতা: তাহারেই পড়ে মনে (সুফিয়া কামাল)","কবিতা: আঠারো বছর বয়স (সুকান্ত ভট্টাচার্য)","কবিতা: ফেব্রুয়ারি ১৯৬৯ (শামসুর রাহমান)","কবিতা: আমি কিংবদন্তির কথা বলছি (সৈয়দ শামসুল হক)","উপন্যাস: লালসালু (সৈয়দ ওয়ালীউল্লাহ)","নাটক: সিরাজউদ্দৌলা (সিকান্দার আবু জাফর)"],
+"বাংলা ২য় পত্র":["ধ্বনি ও বর্ণ","উচ্চারণ ও বানানের নিয়ম","শব্দ গঠন: উপসর্গ ও প্রত্যয়","সমাস ও সন্ধি","পদ ও পদান্তর","বাক্য ও বাক্যান্তর","বাগ্ধারা ও অপপ্রয়োগ","সারাংশ ও সারমর্ম","ভাব-সম্প্রসারণ","পত্র ও আবেদন","প্রতিবেদন","প্রবন্ধ রচনা"],
+"English 1st":["Seen comprehension (textbook units)","Unseen: MCQ and gap filling","Unseen: short answers and information transfer","Unseen: rearranging and summarizing","Writing: paragraph","Writing: informal letter and email","Writing: report and story"],
+"English 2nd":["Right form of verbs","Articles and prepositions","Sentence connectors","Transformation of sentences","Narration","Tag questions and punctuation","Completing sentences","Translation","Formal letter and CV","Composition"]};
+const bn=x=>esc(x);
+const ST=["Learn","Practice","Revise"];
+let S={exam:"2027-04-01",buf:30,hpb:2,done:{},extra:{},open:{}};
+try{Object.assign(S,JSON.parse(localStorage.getItem("hsc27")||"{}"))}catch(e){}
+const save=(keep)=>{if(!keep)S.t=Date.now();try{localStorage.setItem("hsc27",JSON.stringify(S))}catch(e){}if(!keep)pushRemote()};
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const chs=s=>[...D[s],...(S.extra[s]||[])];
+const $=id=>document.getElementById(id);
+function sub(s){const n=chs(s).length*3;let d=0;chs(s).forEach((c,i)=>ST.forEach((_,j)=>{if(S.done[s+"|"+c+"|"+j])d++}));return[d,n]}
+function render(){
+  let D2=0,N=0,h="";
+  for(const s in D){
+    const[d,n]=sub(s);D2+=d;N+=n;
+    h+=`<details class="box" data-s="${esc(s)}" ${S.open[s]?"open":""}><summary><span>${bn(s)}</span><span>${Math.round(100*d/n)}%</span></summary><div class="bar"><i style="width:${100*d/n}%"></i></div>`;
+    chs(s).forEach((c,i)=>{h+=`<div class="ch"><b>${/^(Physics|Chemistry|Higher|Biology)/.test(s)?(i+1)+". ":""}${bn(c)}</b><div class="st">`+ST.map((t,j)=>`<label><input type="checkbox" data-k="${esc(s+"|"+c+"|"+j)}" ${S.done[s+"|"+c+"|"+j]?"checked":""}>${t}</label>`).join("")+`</div></div>`});
+    h+=`<div class="add"><input type="text" placeholder="Add chapter" data-a="${esc(s)}"><button data-b="${esc(s)}">Add</button></div></details>`;
+  }
+  $("list").innerHTML=h;
+  const days=Math.ceil((new Date(S.exam)-new Date())/864e5)-S.buf,left=N-D2;
+  $("pct").textContent=Math.round(100*D2/N)+"%";
+  $("allbar").style.width=100*D2/N+"%";
+  $("days").textContent=Math.max(days,0);
+  $("hpd").textContent=days>0?(left*S.hpb/days).toFixed(1):"-";
+  $("line").textContent=`${left} steps left (${(left*S.hpb).toFixed(0)}h)`+(days>0?`, about ${(left/days).toFixed(1)} steps a day`:", revision time has started");
+}
+$("exam").value=S.exam;$("buf").value=S.buf;$("hpb").value=S.hpb;
+$("exam").onchange=e=>{S.exam=e.target.value;save();render()};
+$("buf").oninput=e=>{S.buf=+e.target.value||0;save();render()};
+$("hpb").oninput=e=>{S.hpb=+e.target.value||1;save();render()};
+$("list").addEventListener("change",e=>{const k=e.target.dataset.k;if(k){S.done[k]=e.target.checked;save();render()}});
+$("list").addEventListener("toggle",e=>{S.open[e.target.dataset.s]=e.target.open;save()},true);
+$("list").addEventListener("click",e=>{const s=e.target.dataset.b;if(!s)return;const v=e.target.parentNode.querySelector("input").value.trim();if(!v)return;(S.extra[s]=S.extra[s]||[]).push(v);S.open[s]=true;save();render()});
+let cloudPush=null;
+function pushRemote(){if(cloudPush)cloudPush()}
+render();
+</script>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,doc,setDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {firebaseConfig} from "./firebase-config.js";
+const KEYS=["exam","buf","hpb","done","extra"];
+const g=id=>document.getElementById(id);
+const email=n=>n.replace(/\D/g,"")+"@hsc.local";
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+async function go(create){
+  const n=g("num").value,p=g("pw").value;g("lmsg").textContent="";
+  if(n.replace(/\D/g,"").length<6||p.length<6){g("lmsg").textContent="Enter your number and a password of 6+ characters";return}
+  try{create?await createUserWithEmailAndPassword(auth,email(n),p):await signInWithEmailAndPassword(auth,email(n),p)}
+  catch(e){g("lmsg").textContent=String(e.code||e).replace("auth/","").replace(/-/g," ")}
+}
+g("in").onclick=()=>go(false);g("up").onclick=()=>go(true);
+g("out").onclick=async()=>{await signOut(auth);try{localStorage.removeItem("hsc27")}catch(e){}location.reload()};
+let unsub=null;
+onAuthStateChanged(auth,u=>{
+  if(unsub){unsub();unsub=null}cloudPush=null;
+  if(!u){g("login").style.display="flex";g("sync").textContent="";return}
+  g("login").style.display="none";
+  const ref=doc(db,"users",u.uid);let pt=0;
+  cloudPush=()=>{clearTimeout(pt);pt=setTimeout(()=>setDoc(ref,{t:S.t||0,json:JSON.stringify(Object.fromEntries(KEYS.map(k=>[k,S[k]])))}).catch(()=>{}),600)};
+  g("sync").textContent="Synced to your account";
+  unsub=onSnapshot(ref,snap=>{
+    if(!snap.exists()){cloudPush();return}
+    const r=snap.data();
+    if((r.t||0)>(S.t||0)){
+      try{const j=JSON.parse(r.json);KEYS.forEach(k=>{if(j[k]!==undefined)S[k]=j[k]});S.t=r.t;save(true);
+        g("exam").value=S.exam;g("buf").value=S.buf;g("hpb").value=S.hpb;render()}catch(e){}
+    }else if((r.t||0)<(S.t||0)){cloudPush()}
+  });
+});
+</script>
+</body>
+</html>
