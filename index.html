@@ -84,7 +84,7 @@ const D={
 "English 2nd":["Right form of verbs","Articles and prepositions","Sentence connectors","Transformation of sentences","Narration","Tag questions and punctuation","Completing sentences","Translation","Formal letter and CV","Composition"]};
 const bn=x=>esc(x);
 const ST=["Learn","Practice","Revise"];
-let S={exam:"2027-04-01",buf:30,hpb:2,done:{},extra:{},open:{}};
+let S={exam:"2027-06-06",buf:30,hpb:2,done:{},extra:{},open:{}};
 try{Object.assign(S,JSON.parse(localStorage.getItem("hsc27")||"{}"))}catch(e){}
 const save=(keep)=>{if(!keep)S.t=Date.now();try{localStorage.setItem("hsc27",JSON.stringify(S))}catch(e){}if(!keep)pushRemote()};
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
