@@ -48,7 +48,7 @@ input[type=checkbox]:checked{background:var(--fill)}
 </style>
 </head>
 <body>
-<div id="login"><div><h1>HSC 27 Tracker</h1><input type="text" id="num" inputmode="tel" placeholder="Phone number"><input type="password" id="pw" placeholder="Password (6+ characters)"><button id="in">Log in</button><button id="up">Create account</button><span id="lmsg"></span></div></div>
+<div id="login"><div><h1>HSC 27 Tracker</h1><input type="text" id="num" inputmode="tel" placeholder="Phone number"><input type="password" id="pw" placeholder="Password (6+ characters)"><button id="in">Log in</button><button id="up">Create account</button><span id="lmsg">Loading...</span></div></div>
 <h1>HSC 27 Tracker</h1>
 <div class="box">
   <div class="grid">
@@ -120,39 +120,48 @@ render();
 </script>
 
 <script type="module">
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFirestore,doc,setDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {firebaseConfig} from "./firebase-config.js";
-const KEYS=["exam","buf","hpb","done","extra"];
 const g=id=>document.getElementById(id);
-const email=n=>n.replace(/\D/g,"")+"@hsc.local";
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-async function go(create){
-  const n=g("num").value,p=g("pw").value;g("lmsg").textContent="";
-  if(n.replace(/\D/g,"").length<6||p.length<6){g("lmsg").textContent="Enter your number and a password of 6+ characters";return}
-  try{create?await createUserWithEmailAndPassword(auth,email(n),p):await signInWithEmailAndPassword(auth,email(n),p)}
-  catch(e){g("lmsg").textContent=String(e.code||e).replace("auth/","").replace(/-/g," ")}
-}
-g("in").onclick=()=>go(false);g("up").onclick=()=>go(true);
-g("out").onclick=async()=>{await signOut(auth);try{localStorage.removeItem("hsc27")}catch(e){}location.reload()};
-let unsub=null;
-onAuthStateChanged(auth,u=>{
-  if(unsub){unsub();unsub=null}cloudPush=null;
-  if(!u){g("login").style.display="flex";g("sync").textContent="";return}
-  g("login").style.display="none";
-  const ref=doc(db,"users",u.uid);let pt=0;
-  cloudPush=()=>{clearTimeout(pt);pt=setTimeout(()=>setDoc(ref,{t:S.t||0,json:JSON.stringify(Object.fromEntries(KEYS.map(k=>[k,S[k]])))}).catch(()=>{}),600)};
-  g("sync").textContent="Synced to your account";
-  unsub=onSnapshot(ref,snap=>{
-    if(!snap.exists()){cloudPush();return}
-    const r=snap.data();
-    if((r.t||0)>(S.t||0)){
-      try{const j=JSON.parse(r.json);KEYS.forEach(k=>{if(j[k]!==undefined)S[k]=j[k]});S.t=r.t;save(true);
-        g("exam").value=S.exam;g("buf").value=S.buf;g("hpb").value=S.hpb;render()}catch(e){}
-    }else if((r.t||0)<(S.t||0)){cloudPush()}
+const say=t=>{g("lmsg").textContent=t};
+(async()=>{try{
+  const B="https://www.gstatic.com/firebasejs/10.12.2/";
+  const [{initializeApp},A,F,C]=await Promise.all([import(B+"firebase-app.js"),import(B+"firebase-auth.js"),import(B+"firebase-firestore.js"),import("./firebase-config.js?v="+Date.now())]);
+  const cfg=C.firebaseConfig;
+  if(String(cfg.apiKey).includes("PASTE")||String(cfg.projectId).includes("PASTE")){say("Fill in firebase-config.js with your Firebase keys");return}
+  const {getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,onAuthStateChanged,signOut}=A;
+  const {getFirestore,doc,setDoc,onSnapshot}=F;
+  const KEYS=["exam","buf","hpb","done","extra"];
+  const email=n=>n.replace(/\D/g,"")+"@hsc.local";
+  const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
+  async function go(create){
+    const n=g("num").value,p=g("pw").value;
+    if(n.replace(/\D/g,"").length<6||p.length<6){say("Enter your number and a password of 6+ characters");return}
+    say("Working...");
+    const slow=setTimeout(()=>say("No response. Check your connection or turn off ad blockers."),10000);
+    try{create?await createUserWithEmailAndPassword(auth,email(n),p):await signInWithEmailAndPassword(auth,email(n),p);say("")}
+    catch(e){say(String(e.code||e.message||e).replace("auth/","").replace(/-/g," "))}
+    clearTimeout(slow);
+  }
+  g("in").onclick=()=>go(false);g("up").onclick=()=>go(true);
+  g("out").onclick=async()=>{await signOut(auth);try{localStorage.removeItem("hsc27")}catch(e){}location.reload()};
+  let unsub=null;
+  onAuthStateChanged(auth,u=>{
+    if(unsub){unsub();unsub=null}cloudPush=null;
+    if(!u){g("login").style.display="flex";g("sync").textContent="";return}
+    g("login").style.display="none";
+    const ref=doc(db,"users",u.uid);let pt=0;
+    cloudPush=()=>{clearTimeout(pt);pt=setTimeout(()=>setDoc(ref,{t:S.t||0,json:JSON.stringify(Object.fromEntries(KEYS.map(k=>[k,S[k]])))}).catch(e=>{g("sync").textContent="Sync error: "+(e.code||e.message)}),600)};
+    g("sync").textContent="Synced to your account";
+    unsub=onSnapshot(ref,snap=>{
+      if(!snap.exists()){cloudPush();return}
+      const r=snap.data();
+      if((r.t||0)>(S.t||0)){
+        try{const j=JSON.parse(r.json);KEYS.forEach(k=>{if(j[k]!==undefined)S[k]=j[k]});S.t=r.t;save(true);
+          g("exam").value=S.exam;g("buf").value=S.buf;g("hpb").value=S.hpb;render()}catch(e){}
+      }else if((r.t||0)<(S.t||0)){cloudPush()}
+    },e=>{g("sync").textContent="Sync error: "+(e.code||e.message)});
   });
-});
+  say("");
+}catch(e){say("Error: "+(e.message||e))}})();
 </script>
 </body>
 </html>
